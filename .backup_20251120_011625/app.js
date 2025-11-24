@@ -1,0 +1,429 @@
+const GRAPH = {
+  1: [2, 5, 8],
+  2: [1, 3, 10],
+  3: [2, 4, 12],
+  4: [3, 5, 14],
+  5: [1, 4, 6],
+  6: [5, 7, 15],
+  7: [6, 8, 17],
+  8: [1, 7, 9],
+  9: [8, 10, 18],
+ 10: [2, 9, 11],
+ 11: [10, 12, 19],
+ 12: [3, 11, 13],
+ 13: [12, 14, 20],
+ 14: [4, 13, 15],
+ 15: [6, 14, 16],
+ 16: [15, 17, 20],
+ 17: [7, 16, 18],
+ 18: [9, 17, 19],
+ 19: [11, 18, 20],
+ 20: [13, 16, 19],
+};
+
+const ROOM_IDS = Object.keys(GRAPH).map(Number);
+
+const config = {
+  arrows: 5,
+  pits: 2,
+  bats: 2,
+};
+
+const state = {
+  mode: 'move',
+  arrowCount: config.arrows,
+  turnCount: 0,
+  visited: new Set(),
+  player: null,
+  wumpus: null,
+  pits: new Set(),
+  bats: new Set(),
+  log: [],
+  shotPath: [],
+  gameOver: false,
+  outcome: 'Exploring',
+};
+
+const roomsLayer = document.getElementById('rooms-layer');
+const linesSvg = document.getElementById('cave-lines');
+const restartBtn = document.getElementById('restart');
+const modeButtons = document.querySelectorAll('.chip');
+const arrowCountEl = document.getElementById('arrow-count');
+const turnCountEl = document.getElementById('turn-count');
+const gameStateEl = document.getElementById('game-state');
+const logEl = document.getElementById('log');
+const shotDisplayEl = document.getElementById('shot-display');
+const fireShotBtn = document.getElementById('fire-shot');
+const clearShotBtn = document.getElementById('clear-shot');
+const dispatchGlanceEl = document.getElementById('dispatch-glance');
+
+const roomNodes = new Map();
+
+function polarPosition(index) {
+  const angle = ((index / ROOM_IDS.length) * Math.PI * 2) - Math.PI / 2;
+  const radius = index % 2 === 0 ? 42 : 33;
+  return {
+    x: 50 + radius * Math.cos(angle),
+    y: 50 + radius * Math.sin(angle),
+  };
+}
+
+const ROOM_POSITIONS = ROOM_IDS.reduce((map, room, index) => {
+  map[room] = polarPosition(index);
+  return map;
+}, {});
+
+function startGame() {
+  state.visited.clear();
+  state.pits.clear();
+  state.bats.clear();
+  state.log = [];
+  state.turnCount = 0;
+  state.arrowCount = config.arrows;
+  state.shotPath = [];
+  state.gameOver = false;
+  state.outcome = 'Exploring';
+  setMode('move', { silent: true });
+
+  const used = new Set();
+  state.player = drawRoom(used);
+  state.visited.add(state.player);
+  state.wumpus = drawRoom(used);
+
+  for (let i = 0; i < config.pits; i += 1) {
+    state.pits.add(drawRoom(used));
+  }
+  for (let i = 0; i < config.bats; i += 1) {
+    state.bats.add(drawRoom(used));
+  }
+
+  addLog('Fresh cave plotted. Hunt the Wumpus!', true);
+  updateUI();
+}
+
+function drawRoom(used) {
+  const available = ROOM_IDS.filter((room) => !used.has(room));
+  const room = available[Math.floor(Math.random() * available.length)];
+  used.add(room);
+  return room;
+}
+
+function addLog(message, important = false) {
+  state.log.unshift({ message, important, id: crypto.randomUUID ? crypto.randomUUID() : Math.random() });
+  state.log = state.log.slice(0, 7);
+  renderLog();
+}
+
+function renderLog() {
+  logEl.innerHTML = '';
+  state.log.forEach((entry) => {
+    const item = document.createElement('li');
+    item.textContent = entry.message;
+    if (entry.important) item.classList.add('important');
+    logEl.appendChild(item);
+  });
+  if (dispatchGlanceEl) {
+    const latest = state.log[0];
+    if (latest) {
+      dispatchGlanceEl.textContent = latest.message;
+      dispatchGlanceEl.classList.toggle('important', Boolean(latest.important));
+    } else {
+      dispatchGlanceEl.textContent = 'Awaiting intel...';
+      dispatchGlanceEl.classList.remove('important');
+    }
+  }
+}
+
+function setMode(mode, { silent = false } = {}) {
+  state.mode = mode;
+  if (mode === 'move') {
+    state.shotPath = [];
+  }
+  modeButtons.forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+  });
+  if (!silent) updateUI();
+}
+
+function handleRoomClick(event) {
+  if (state.gameOver) return;
+  const node = event.target.closest('.room-node');
+  if (!node) return;
+  const room = Number(node.dataset.room);
+  if (state.mode === 'move') {
+    attemptMove(room);
+  } else {
+    queueShotRoom(room);
+  }
+}
+
+function attemptMove(room) {
+  if (room === state.player) return;
+  if (!GRAPH[state.player].includes(room)) {
+    addLog('You cannot walk there directly.');
+    return;
+  }
+  state.player = room;
+  state.visited.add(room);
+  state.turnCount += 1;
+  addLog(`Moved to room ${room}.`);
+  resolveRoom();
+  updateUI();
+}
+
+function resolveRoom() {
+  if (state.player === state.wumpus) {
+    loseGame('The Wumpus wakes and eats you.');
+    return;
+  }
+  if (state.pits.has(state.player)) {
+    loseGame('You fall forever into a bottomless pit.');
+    return;
+  }
+  if (state.bats.has(state.player)) {
+    addLog('Super bats whisk you through the dark!', true);
+    teleportPlayer();
+    return;
+  }
+
+  const warnings = describeRoom(state.player);
+  const cues = [];
+  if (warnings.stench) cues.push('You smell a stench.');
+  if (warnings.breeze) cues.push('You feel a draft.');
+  if (warnings.flutter) cues.push('You hear flapping.');
+  if (cues.length === 0) {
+    addLog('All is quiet... for now.');
+  } else {
+    cues.forEach((msg) => addLog(msg));
+  }
+}
+
+function teleportPlayer() {
+  const forbidden = new Set([state.player]);
+  state.player = drawRoom(forbidden);
+  state.visited.add(state.player);
+  resolveRoom();
+}
+
+function describeRoom(room) {
+  const neighbors = GRAPH[room];
+  return {
+    stench: neighbors.includes(state.wumpus),
+    breeze: neighbors.some((neighbor) => state.pits.has(neighbor)),
+    flutter: neighbors.some((neighbor) => state.bats.has(neighbor)),
+  };
+}
+
+function queueShotRoom(room) {
+  if (state.shotPath.length >= 5) {
+    addLog('Maximum of five rooms per shot.');
+    return;
+  }
+  state.shotPath.push(room);
+  addLog(`Arrow will travel through room ${room}.`);
+  updateShotDisplay();
+}
+
+function clearShot() {
+  state.shotPath = [];
+  updateShotDisplay();
+}
+
+function fireShot() {
+  if (state.mode !== 'shoot') {
+    addLog('Switch to shoot mode first.');
+    return;
+  }
+  if (state.shotPath.length === 0) {
+    addLog('Select at least one room for the arrow.');
+    return;
+  }
+  if (state.arrowCount <= 0) {
+    addLog('No arrows remain!', true);
+    return;
+  }
+
+  state.arrowCount -= 1;
+  state.turnCount += 1;
+  addLog(`Arrow released through rooms ${state.shotPath.join(' → ')}.`);
+
+  let arrowRoom = state.player;
+  for (let i = 0; i < state.shotPath.length; i += 1) {
+    const target = state.shotPath[i];
+    const neighbors = GRAPH[arrowRoom];
+    if (neighbors.includes(target)) {
+      arrowRoom = target;
+    } else {
+      arrowRoom = neighbors[Math.floor(Math.random() * neighbors.length)];
+      addLog(`Arrow ricochets into room ${arrowRoom}.`);
+    }
+
+    if (arrowRoom === state.wumpus) {
+      addLog('A horrible scream echoes — the Wumpus is dead!', true);
+      winGame();
+      clearShot();
+      updateUI();
+      return;
+    }
+    if (arrowRoom === state.player) {
+      loseGame('Your own arrow strikes you down.');
+      clearShot();
+      updateUI();
+      return;
+    }
+  }
+
+  clearShot();
+  addLog('Arrow clatters harmlessly.');
+  maybeMoveWumpus();
+  updateUI();
+}
+
+function maybeMoveWumpus() {
+  if (state.gameOver) return;
+  if (Math.random() < 0.75) return;
+  const neighbors = GRAPH[state.wumpus];
+  state.wumpus = neighbors[Math.floor(Math.random() * neighbors.length)];
+  addLog('You hear heavy footsteps in the dark...', true);
+  if (state.wumpus === state.player) {
+    loseGame('The Wumpus shambles into your room.');
+  }
+}
+
+function winGame() {
+  state.gameOver = true;
+  state.outcome = 'Victory';
+  addLog('You survive another expedition.', true);
+}
+
+function loseGame(message) {
+  state.gameOver = true;
+  state.outcome = 'Doomed';
+  addLog(message, true);
+}
+
+function buildCave() {
+  linesSvg.innerHTML = '';
+  roomsLayer.innerHTML = '';
+
+  ROOM_IDS.forEach((room) => {
+    GRAPH[room].forEach((neighbor) => {
+      if (room < neighbor) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        const start = ROOM_POSITIONS[room];
+        const end = ROOM_POSITIONS[neighbor];
+        line.setAttribute('x1', start.x);
+        line.setAttribute('y1', start.y);
+        line.setAttribute('x2', end.x);
+        line.setAttribute('y2', end.y);
+        linesSvg.appendChild(line);
+      }
+    });
+  });
+
+  ROOM_IDS.forEach((room) => {
+    const node = document.createElement('button');
+    node.type = 'button';
+    node.className = 'room-node';
+    node.dataset.room = room;
+    node.style.left = `${ROOM_POSITIONS[room].x}%`;
+    node.style.top = `${ROOM_POSITIONS[room].y}%`;
+    node.style.transform = 'translate(-50%, -50%)';
+
+    const label = document.createElement('span');
+    label.className = 'label';
+    label.textContent = room;
+    node.appendChild(label);
+
+    const hints = document.createElement('span');
+    hints.className = 'hint-icons';
+    node.appendChild(hints);
+
+    roomsLayer.appendChild(node);
+    roomNodes.set(room, node);
+  });
+
+  roomsLayer.addEventListener('click', handleRoomClick);
+}
+
+function updateCaveNodes() {
+  const neighbors = new Set(GRAPH[state.player]);
+  roomNodes.forEach((node, room) => {
+    node.classList.toggle('player', room === state.player);
+    node.classList.toggle('move-option', state.mode === 'move' && neighbors.has(room));
+    node.classList.remove('aim-step');
+    node.removeAttribute('data-step');
+
+    const reveal = state.visited.has(room) || state.gameOver;
+    node.classList.toggle('revealed', reveal);
+    node.classList.toggle('wumpus', reveal && room === state.wumpus);
+    node.classList.toggle('pit', reveal && state.pits.has(room));
+    node.classList.toggle('bats', reveal && state.bats.has(room));
+
+    const hints = node.querySelector('.hint-icons');
+    hints.textContent = '';
+    if (reveal) {
+      const details = describeRoom(room);
+      if (details.stench && room !== state.wumpus) hints.textContent += '💀';
+      if (details.breeze && !state.pits.has(room)) hints.textContent += '〰';
+      if (details.flutter && !state.bats.has(room)) hints.textContent += '🦇';
+    }
+  });
+
+  state.shotPath.forEach((room, index) => {
+    const node = roomNodes.get(room);
+    if (!node) return;
+    node.classList.add('aim-step');
+    node.dataset.step = index + 1;
+  });
+}
+
+function updateStatus() {
+  arrowCountEl.textContent = state.arrowCount;
+  turnCountEl.textContent = state.turnCount;
+  gameStateEl.textContent = state.outcome;
+}
+
+function updateShotDisplay() {
+  shotDisplayEl.textContent = state.shotPath.length
+    ? state.shotPath.join(' → ')
+    : 'Select up to five rooms.';
+  fireShotBtn.disabled =
+    state.mode !== 'shoot' || state.shotPath.length === 0 || state.arrowCount <= 0 || state.gameOver;
+  clearShotBtn.disabled = state.shotPath.length === 0;
+  updateCaveNodes();
+}
+
+function updateUI() {
+  updateCaveNodes();
+  updateStatus();
+  updateShotDisplay();
+}
+
+function bindControls() {
+  modeButtons.forEach((btn) => {
+    btn.addEventListener('click', () => setMode(btn.dataset.mode));
+  });
+  restartBtn.addEventListener('click', startGame);
+  fireShotBtn.addEventListener('click', fireShot);
+  clearShotBtn.addEventListener('click', clearShot);
+
+  document.addEventListener('keydown', (event) => {
+    if (state.gameOver) return;
+    if (state.mode !== 'move') return;
+    const map = {
+      w: GRAPH[state.player][0],
+      a: GRAPH[state.player][1],
+      s: GRAPH[state.player][2],
+    };
+    const target = map[event.key];
+    if (target) {
+      event.preventDefault();
+      attemptMove(target);
+    }
+  });
+}
+
+buildCave();
+bindControls();
+startGame();

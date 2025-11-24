@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<!--
+  Hunt the Wumpus - Classic Cave Adventure Game
+  A modern, minimalist remake of the 1973 text adventure
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hunt the Wumpus | Classic Cave Adventure Game</title>
+    <meta name="description" content="Navigate dangerous caverns filled with pits, bats, and the fearsome Wumpus. A modern minimalist remake of the 1973 classic." />
+    <meta name="theme-color" content="#0a0e17" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Hunt the Wumpus - Classic Cave Adventure Game" />
+    <meta property="og:description" content="Navigate dangerous caverns filled with pits, bats, and the fearsome Wumpus. A modern minimalist remake of the 1973 classic." />
+    <meta property="og:image" content="/games/wumpus/social-card.png" />
+    <meta property="og:url" content="https://dr.eamer.dev/games/wumpus/" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Hunt the Wumpus - Classic Cave Adventure Game" />
+    <meta name="twitter:description" content="Navigate dangerous caverns filled with pits, bats, and the fearsome Wumpus. A modern minimalist remake of the 1973 classic." />
+    <meta name="twitter:image" content="/games/wumpus/social-card.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/games/wumpus/style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header>
+        <div>
+          <p class="eyebrow">Classic Cave Adventure</p>
+          <h1>Hunt the Wumpus</h1>
+        </div>
+        <button id="restart" class="ghost">New Cavern</button>
+      </header>
+
+      <section class="control-hub" aria-label="Primary controls">
+        <div class="control-module mode-module">
+          <p class="module-label">Mode</p>
+          <div class="mode-toggle" role="group" aria-label="Action mode">
+            <button class="chip active" data-mode="move">Move</button>
+            <button class="chip" data-mode="shoot">Aim</button>
+          </div>
+        </div>
+        <div class="control-module stats-module" aria-label="Mission vitals">
+          <div class="stat-chip">
+            <span>Arrows</span>
+            <strong id="arrow-count">0</strong>
+          </div>
+          <div class="stat-chip">
+            <span>Turns</span>
+            <strong id="turn-count">0</strong>
+          </div>
+          <div class="stat-chip">
+            <span>State</span>
+            <strong id="game-state">Exploring</strong>
+          </div>
+        </div>
+        <div class="control-module shot-module">
+          <div class="shot-builder">
+            <p class="shot-label">Arrow Path</p>
+            <p id="shot-display" class="shot-display">Select up to five rooms.</p>
+            <div class="shot-actions">
+              <button id="clear-shot" class="ghost secondary" type="button">Clear</button>
+              <button id="fire-shot" class="ghost primary" type="button">Shoot</button>
+            </div>
+          </div>
+        </div>
+        <div class="control-module dispatch-module">
+          <p class="module-label">Dispatch</p>
+          <p id="dispatch-glance" class="dispatch-glance">Awaiting intel...</p>
+        </div>
+      </section>
+
+      <main class="game-panel">
+        <section class="board" aria-label="Cave Network">
+          <div class="cave" id="cave">
+            <svg id="cave-lines" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"></svg>
+            <div id="rooms-layer" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <section class="side-panel">
+          <div class="status-card log">
+            <h2>Dispatch</h2>
+            <ul id="log" aria-live="polite"></ul>
+          </div>
+        </section>
+      </main>
+
+      <section class="info-card">
+        <h2>Field Brief</h2>
+        <p>
+          Each room hides hazards. A <strong>stench</strong> means the Wumpus lurks nearby,
+          a <strong>breeze</strong> hints at a pit, and fluttering wings mark <strong>bats</strong>
+          who will whisk you elsewhere. Arrows travel in a straight line until they hit a wall.
+        </p>
+      </section>
+    </div>
+    <script src="/games/wumpus/app.js" type="module"></script>
+  </body>
+</html>
