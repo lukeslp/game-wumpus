@@ -527,3 +527,45 @@ function bindControls() {
 buildCave();
 bindControls();
 startGame();
+
+// === Save/Load Functionality ===
+const saveManager = new SaveStateManager('wumpus');
+
+function getGameState() {
+  return {
+    mode: state.mode,
+    arrowCount: state.arrowCount,
+    turnCount: state.turnCount,
+    visited: state.visited,
+    player: state.player,
+    wumpus: state.wumpus,
+    pits: state.pits,
+    bats: state.bats,
+    log: state.log,
+    shotPath: state.shotPath,
+    gameOver: state.gameOver,
+    outcome: state.outcome,
+  };
+}
+
+function setGameState(saved) {
+  Object.assign(state, saved);
+  updateUI();
+  // Rebuild log display
+  logEl.innerHTML = '';
+  state.log.forEach(msg => {
+    const li = document.createElement('li');
+    li.textContent = msg;
+    logEl.appendChild(li);
+  });
+}
+
+// Add save/load buttons to header
+const header = document.querySelector('header');
+if (header && typeof createSaveUI === 'function') {
+  createSaveUI(saveManager, getGameState, setGameState, header);
+}
+
+// Auto-save on game over
+const originalEndGame = typeof endGame !== 'undefined' ? endGame : null;
+// Note: Save is available via buttons in header

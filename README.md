@@ -91,8 +91,14 @@ Works in all modern browsers:
 
 Original game design by Gregory Yob (1973)
 
-This implementation created by Luke Steuber, 2025.
-
 ## License
 
-Free to play and modify for personal and educational use.
+MIT License - see [LICENSE](LICENSE) file
+
+## Author
+
+**Luke Steuber**
+
+- Website: [lukesteuber.com](https://lukesteuber.com)
+- GitHub: [@lukeslp](https://github.com/lukeslp)
+- Bluesky: [@lukesteuber.com](https://bsky.app/profile/lukesteuber.com)
