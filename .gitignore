@@ -1,0 +1,20 @@
+
+# AI Development & Analysis (local only)
+CLAUDE.md
+AGENTS.md
+.claude/
+.cursor/
+.gemini/
+*.mdc
+SUGGESTIONS.md
+*_REPORT.md
+*_SUMMARY.md
+*_ANALYSIS.md
+*_CHECKLIST.md
+*_ENHANCEMENTS.md
+*_FEATURES.md
+DESIGN*.md
+ENGAGEMENT*.md
+OPTIMIZATION*.md
+LOW_HANGING_FRUIT*.md
+.backup_*/

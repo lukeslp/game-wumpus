@@ -1,15 +1,32 @@
 <!DOCTYPE html>
+<!--
+  Hunt the Wumpus - Classic Cave Adventure Game
+  A modern, minimalist remake of the 1973 text adventure
+-->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Hunt the Wumpus | Classic Cave Adventure Game</title>
     <meta name="description" content="Navigate dangerous caverns filled with pits, bats, and the fearsome Wumpus. A modern minimalist remake of the 1973 classic." />
-    <meta name="theme-color" content="#e6ebf3" />
+    <meta name="theme-color" content="#0a0e17" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Hunt the Wumpus - Classic Cave Adventure Game" />
+    <meta property="og:description" content="Navigate dangerous caverns filled with pits, bats, and the fearsome Wumpus. A modern minimalist remake of the 1973 classic." />
+    <meta property="og:image" content="/games/wumpus/social-card.png" />
+    <meta property="og:url" content="https://dr.eamer.dev/games/wumpus/" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Hunt the Wumpus - Classic Cave Adventure Game" />
+    <meta name="twitter:description" content="Navigate dangerous caverns filled with pits, bats, and the fearsome Wumpus. A modern minimalist remake of the 1973 classic." />
+    <meta name="twitter:image" content="/games/wumpus/social-card.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/games/wumpus/style.css" />
@@ -18,7 +35,7 @@
     <div class="app-shell">
       <header>
         <div>
-          <p class="eyebrow">Minimalist Neumorphic Edition</p>
+          <p class="eyebrow">Classic Cave Adventure</p>
           <h1>Hunt the Wumpus</h1>
         </div>
         <button id="restart" class="ghost">New Cavern</button>
@@ -87,6 +104,7 @@
         </p>
       </section>
     </div>
+    <script src="/games/shared/save-state.js"></script>
     <script src="/games/wumpus/app.js" type="module"></script>
   </body>
 </html>
