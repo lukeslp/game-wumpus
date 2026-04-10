@@ -20,15 +20,7 @@
   --accent-hover: #7db3ff;
   --accent-active: #3d82ff;
 
-  --danger: #ef4444;
-  --danger-hover: #f87171;
   --danger-bg: rgba(239, 68, 68, 0.1);
-
-  --success: #10b981;
-  --success-hover: #34d399;
-  --success-bg: rgba(16, 185, 129, 0.1);
-
-  --warning: #f59e0b;
   --warning-bg: rgba(245, 158, 11, 0.1);
 
   --player: #5b9eff;
@@ -42,7 +34,6 @@
   --shadow-glow: 0 0 20px rgba(91, 158, 255, 0.3);
 
   --transition-fast: 150ms ease;
-  --transition-normal: 250ms ease;
 
   --radius-sm: 4px;
   --radius-md: 8px;
@@ -297,6 +288,7 @@ button:focus-visible {
   justify-content: center;
   color: var(--text-secondary);
   font-weight: 700;
+  transform: translate(-50%, -50%);
   transition: all var(--transition-fast);
   cursor: pointer;
 }
@@ -304,7 +296,7 @@ button:focus-visible {
 .room-node:hover {
   border-color: var(--border-accent);
   background: var(--bg-tertiary);
-  transform: scale(1.05);
+  transform: translate(-50%, -50%) scale(1.05);
 }
 
 .room-node:focus-visible {
@@ -329,11 +321,11 @@ button:focus-visible {
   border-color: var(--player);
   color: white;
   box-shadow: var(--shadow-glow), var(--shadow-md);
-  transform: scale(1.1);
+  transform: translate(-50%, -50%) scale(1.1);
 }
 
 .room-node.player:hover {
-  transform: scale(1.1);
+  transform: translate(-50%, -50%) scale(1.1);
 }
 
 .room-node.move-option {
@@ -357,7 +349,6 @@ button:focus-visible {
 
 .room-node.aim-step {
   border: 2px dashed var(--accent-primary);
-  border-color: var(--accent-primary);
   background: rgba(91, 158, 255, 0.1);
 }
 
@@ -421,25 +412,6 @@ button:focus-visible {
   letter-spacing: -0.01em;
 }
 
-dl {
-  display: grid;
-  grid-template-columns: auto auto;
-  gap: var(--spacing-sm) var(--spacing-md);
-  margin: 0;
-}
-
-dl dt {
-  color: var(--text-tertiary);
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-dl dd {
-  margin: 0;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
 .mode-toggle {
   display: flex;
   gap: var(--spacing-sm);
@@ -470,12 +442,6 @@ dl dd {
   color: white;
   box-shadow: var(--shadow-sm);
   border-color: var(--accent-primary);
-}
-
-.hint {
-  font-size: 0.875rem;
-  color: var(--text-tertiary);
-  line-height: 1.5;
 }
 
 .shot-builder {
@@ -647,10 +613,6 @@ dl dd {
 
   .control-hub {
     grid-template-columns: 1fr;
-  }
-
-  .stats-module {
-    flex-direction: row;
   }
 
   .status-card {

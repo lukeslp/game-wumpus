@@ -74,24 +74,35 @@ const dispatchGlanceEl = document.getElementById('dispatch-glance');
 const roomNodes = new Map();
 
 /**
- * Calculate polar coordinates for room positioning in circular layout.
- * @param {number} index - Room index in the ROOM_IDS array
- * @returns {{x: number, y: number}} Position as percentage coordinates
+ * Room positions as a Schlegel diagram of the dodecahedron.
+ * Four concentric pentagons where visual adjacency matches graph adjacency.
+ *   Ring 1 (outer):  1, 2, 3, 4, 5   — the outer pentagon
+ *   Ring 2:          8,10,12,14, 6   — each bridges one Ring 1 node to two Ring 3 nodes
+ *   Ring 3:          9,11,13,15, 7   — each bridges two Ring 2 nodes to one Ring 4 node
+ *   Ring 4 (inner): 18,19,20,16,17   — the inner pentagon
  */
-function polarPosition(index) {
-  const angle = ((index / ROOM_IDS.length) * Math.PI * 2) - Math.PI / 2;
-  const radius = index % 2 === 0 ? 42 : 33;
-  return {
-    x: 50 + radius * Math.cos(angle),
-    y: 50 + radius * Math.sin(angle),
-  };
-}
-
-/** Pre-calculated positions for all rooms in the cave. */
-const ROOM_POSITIONS = ROOM_IDS.reduce((map, room, index) => {
-  map[room] = polarPosition(index);
-  return map;
-}, {});
+const ROOM_POSITIONS = {
+  1:  { x: 50.0, y:  5.0 },
+  2:  { x: 92.8, y: 36.1 },
+  3:  { x: 76.5, y: 86.4 },
+  4:  { x: 23.5, y: 86.4 },
+  5:  { x:  7.2, y: 36.1 },
+  6:  { x: 18.6, y: 39.8 },
+  7:  { x: 37.1, y: 32.2 },
+  8:  { x: 50.0, y: 17.0 },
+  9:  { x: 62.9, y: 32.2 },
+  10: { x: 81.4, y: 39.8 },
+  11: { x: 70.9, y: 56.8 },
+  12: { x: 69.4, y: 76.7 },
+  13: { x: 50.0, y: 72.0 },
+  14: { x: 30.6, y: 76.7 },
+  15: { x: 29.1, y: 56.8 },
+  16: { x: 38.6, y: 53.7 },
+  17: { x: 42.9, y: 40.3 },
+  18: { x: 57.1, y: 40.3 },
+  19: { x: 61.4, y: 53.7 },
+  20: { x: 50.0, y: 62.0 },
+};
 
 /**
  * Initialize a new game with fresh cave layout and reset state.
@@ -412,7 +423,6 @@ function buildCave() {
     node.dataset.room = room;
     node.style.left = `${ROOM_POSITIONS[room].x}%`;
     node.style.top = `${ROOM_POSITIONS[room].y}%`;
-    node.style.transform = 'translate(-50%, -50%)';
 
     const label = document.createElement('span');
     label.className = 'label';
@@ -491,7 +501,6 @@ function updateShotDisplay() {
  * Update all UI elements to match current game state.
  */
 function updateUI() {
-  updateCaveNodes();
   updateStatus();
   updateShotDisplay();
 }
@@ -550,14 +559,8 @@ function getGameState() {
 
 function setGameState(saved) {
   Object.assign(state, saved);
+  renderLog();
   updateUI();
-  // Rebuild log display
-  logEl.innerHTML = '';
-  state.log.forEach(msg => {
-    const li = document.createElement('li');
-    li.textContent = msg;
-    logEl.appendChild(li);
-  });
 }
 
 // Add save/load buttons to header
@@ -565,7 +568,3 @@ const header = document.querySelector('header');
 if (header && typeof createSaveUI === 'function') {
   createSaveUI(saveManager, getGameState, setGameState, header);
 }
-
-// Auto-save on game over
-const originalEndGame = typeof endGame !== 'undefined' ? endGame : null;
-// Note: Save is available via buttons in header
