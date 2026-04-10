@@ -234,8 +234,9 @@ function attemptMove(room) {
 
 /**
  * Check current room for hazards and provide sensory clues.
+ * @param {number} batDepth - Current bat teleport chain depth
  */
-function resolveRoom() {
+function resolveRoom(batDepth = 0) {
   if (state.player === state.wumpus) {
     loseGame('The Wumpus wakes and eats you.');
     return;
@@ -246,7 +247,7 @@ function resolveRoom() {
   }
   if (state.bats.has(state.player)) {
     addLog('Super bats whisk you through the dark!', true);
-    teleportPlayer();
+    teleportPlayer(batDepth + 1);
     return;
   }
 
@@ -264,12 +265,17 @@ function resolveRoom() {
 
 /**
  * Teleport player to a random room (super bats effect).
+ * @param {number} depth - Current teleport chain depth (guards against unbounded recursion)
  */
-function teleportPlayer() {
+function teleportPlayer(depth = 0) {
+  if (depth > 10) {
+    addLog('The bats finally drop you here.', true);
+    return;
+  }
   const forbidden = new Set([state.player]);
   state.player = drawRoom(forbidden);
   state.visited.add(state.player);
-  resolveRoom();
+  resolveRoom(depth);
 }
 
 /**
@@ -433,6 +439,7 @@ function buildCave() {
     hints.className = 'hint-icons';
     node.appendChild(hints);
 
+    node.setAttribute('aria-label', `Room ${room}`);
     roomsLayer.appendChild(node);
     roomNodes.set(room, node);
   });
@@ -459,12 +466,25 @@ function updateCaveNodes() {
 
     const hints = node.querySelector('.hint-icons');
     hints.textContent = '';
-    if (reveal) {
-      const details = describeRoom(room);
+    const details = reveal ? describeRoom(room) : null;
+    if (details) {
       if (details.stench && room !== state.wumpus) hints.textContent += '💀';
       if (details.breeze && !state.pits.has(room)) hints.textContent += '〰';
       if (details.flutter && !state.bats.has(room)) hints.textContent += '🦇';
     }
+
+    const parts = [`Room ${room}`];
+    if (room === state.player) parts.push('(your location)');
+    else if (state.mode === 'move' && neighbors.has(room)) parts.push('(adjacent)');
+    if (reveal && room === state.wumpus) parts.push('- Wumpus');
+    if (reveal && state.pits.has(room)) parts.push('- pit');
+    if (reveal && state.bats.has(room)) parts.push('- bats');
+    if (details && room !== state.wumpus && !state.pits.has(room) && !state.bats.has(room)) {
+      if (details.stench) parts.push('- stench nearby');
+      if (details.breeze) parts.push('- breeze nearby');
+      if (details.flutter) parts.push('- bats nearby');
+    }
+    node.setAttribute('aria-label', parts.join(' '));
   });
 
   state.shotPath.forEach((room, index) => {
